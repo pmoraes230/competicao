@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %} Perfil {% endblock  %}
+
+{% block content %}
+{% block header %}
+    {% include 'partials/header/header_marrom.html' %}
+{% endblock %}
+
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }} text-center"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<div class="container">
+    <h1 class="text-center">Cadastro de Perfil</h1>
+    <!-- Formulário ou conteúdo de cadastro aqui -->
+    <form class="form_container" method="post"> {% csrf_token %}
+        <div class="mb-3">
+            <label for="nome" class="form-label color_marrom">Nome Completo:</label>
+            <input type="text" class="form-control" id="nome" name="nome" placeholder="Nome aqui">
+        </div>
+        <div class="mb-3">
+            <label for="descricao" class="form-label">Descricão</label>
+            <textarea class="form-control" style="resize: none;" id="descricao" name="descricao" rows="3"></textarea>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn bg_verde color_cinza">Cadastrar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block footer %}
+    {% include 'partials/footer/footer_form.html' %}
+{% endblock %}

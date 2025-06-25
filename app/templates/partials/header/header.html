@@ -31,8 +31,8 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{% url "register_user" %}">Cadastro Usuário</a></li>
-                        <li><a class="dropdown-item" href="#">Perfil</a></li>
-                        <li><a class="dropdown-item" href="#">Cadastro Evento</a></li>
+                        <li><a class="dropdown-item" href="{% url 'register_profile' %}">Perfil</a></li>
+                        <li><a class="dropdown-item" href="{% url 'register_events' %}">Cadastro Evento</a></li>
                         <li><a class="dropdown-item" href="#">Cadastro Setor</a></li>
                     </ul>
                 </li>

@@ -160,3 +160,80 @@ def register_client(request):
             return redirect('registe_client')
     
     return render(request, 'reg_cliente/reg_cliente.html', context)
+
+def register_profile(request):
+    context = get_user_profile(request)
+    
+    if request.method == 'POST':
+        name_profile = request.POST.get('nome')
+        description = request.POST.get('descricao')
+        
+        if not name_profile or not description:
+            messages.error(request, 'Todos os campos são obrigatórios')
+            return redirect('register_profile')
+        
+        try:
+            profile = models.Perfil.objects.create(
+                nome=name_profile,
+                descricao=description
+            )
+            profile.full_clean()
+            profile.save()
+            
+            messages.success(request, 'Perfil salvo com sucesso!')
+            return redirect('register_profile')
+            
+        except ValueError as ve:
+            messages.error(request, f'Erro ao salvar perfil {str(ve)}')
+            return redirect('register_profile')
+        
+    return render(request, 'perfil/reg_perfil.html', context)
+
+@role_required('Administrador', 'Staff')
+def register_events(request):
+    context = get_user_profile(request)
+    
+    if request.method == 'POST':
+        name_event = request.POST.get('nome')
+        date_event = request.POST.get('date')
+        hour_event = request.POST.get('hour')
+        image_event = request.POST.get('imagem')
+        price_event = request.POST.get('price')
+        limit_peaple = request.POST.get('peaple_limit')
+        adress = request.POST.get('adress')
+        description = request.POST.get('descricao')
+        
+        if not name_event or not date_event or not hour_event or not image_event or not price_event or not limit_peaple or not adress or not description:
+            messages.error(request, 'Todos os campos são obrigatórios')
+            return redirect('register_events')
+        
+        if models.Evento.objects.filter(nome=name_event).exists():
+            messages.error(request, 'Evento já existente.')
+            return redirect('register_events')
+        
+        try:
+            user_id = request.session.get('user_id')
+            if not user_id:
+                messages.error(request, 'Usuário não autenticado.')
+                return redirect('login')
+            
+            event = models.Evento.objects.create(
+                nome=name_event,
+                data_evento=date_event,
+                horario=hour_event,
+                cpt_pessoas=limit_peaple,
+                imagem=image_event,
+                preco_evento=price_event,
+                local_evento=adress,
+                id_usuario_id=user_id
+            )
+            event.full_clean()
+            event.save()
+            
+            messages.success(request, 'Evento salvo com sucesso!')
+            return redirect('register_events')
+        except ValueError as ve:
+            messages.error(request, f'Erro ao salvar evento {str(ve)}')
+            return redirect('register_events')
+    
+    return render(request, 'reg_eventos/reg_evento.html', context)

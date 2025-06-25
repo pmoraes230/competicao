@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %} Evento {% endblock  %}
+
+{% block content %}
+{% block header %}
+    {% include 'partials/header/header_marrom.html' %}
+{% endblock %}
+
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }} text-center"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<div class="container">
+    <h1 class="text-center color_marrom">Cadastro de Eventos</h1>
+    <!-- Formulário ou conteúdo de cadastro aqui -->
+    <form class="form_container" method="post"> {% csrf_token %}
+        <div class="mb-3">
+            <label for="nome" class="form-label color_marrom">Nome Completo:</label>
+            <input type="text" class="form-control" id="nome" name="nome" placeholder="Nome aqui">
+        </div>
+        <div class="mb-3">
+            <label for="date" class="form-label color_marrom">Data Evento:</label>
+            <input type="date" class="form-control" id="date" name="date" placeholder="00/00/0000">
+        </div>
+        <div class="mb-3">
+            <label for="hour" class="form-label color_marrom">Horário:</label>
+            <input type="time" class="form-control" id="hour" name="hour" placeholder="00:00">
+        </div>
+        <div class="mb-3">
+            <label for="imagem" class="form-label color_marrom">Imagem:</label>
+            <input type="file" class="form-control" id="imagem" name="imagem">
+        </div>
+        <div class="mb-3">
+            <label for="price" class="form-label color_marrom">Preço:</label>
+            <input type="text" class="form-control" id="price" name="price" placeholder="Preço">
+        </div>
+        <div class="mb-3">
+            <label for="peaple_limit" class="form-label color_marrom">Limite de Pessoas:</label>
+            <input type="text" class="form-control" id="peaple_limit" name="peaple_limit" placeholder="limite">
+        </div>
+        <div class="mb-3">
+            <label for="adress" class="form-label color_marrom">Local:</label>
+            <input type="text" class="form-control" id="adress" name="adress" placeholder="Local do Evento">
+        </div>
+        <div class="mb-3">
+            <label for="descricao" class="form-label">Descricão</label>
+            <textarea class="form-control" style="resize: none;" id="descricao" name="descricao" rows="3"></textarea>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn bg_verde color_cinza">Cadastrar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block footer %}
+    {% include 'partials/footer/footer.html' %}
+{% endblock %}
