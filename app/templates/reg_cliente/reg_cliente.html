@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %} Cliente {% endblock %}
+
+{% block content %}
+{% block header %}
+    {% include 'partials/header/header_marrom.html' %}
+{% endblock %}
+
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }} text-center"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<div class="container">
+    <h1 class="text-center">Cadastro de Clientes</h1>
+    <!-- Formulário ou conteúdo de cadastro aqui -->
+    <form class="form_container" method="post"> {% csrf_token %}
+        <div class="mb-3">
+            <label for="nome" class="form-label color_marrom">Nome Completo:</label>
+            <input type="text" class="form-control" id="nome" name="nome" placeholder="Nome aqui">
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label color_marrom">Email:</label>
+            <input type="email" class="form-control" id="email" name="email" placeholder="Email">
+        </div>
+        <div class="mb-3">
+            <label for="cpf" class="form-label color_marrom">CPF:</label>
+            <input type="text" class="form-control" id="cpf" name="cpf" placeholder="000.000.000-00">
+            <p class="subtitle color_branco" id="alert_cpf" style="display: none;"></p>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn bg_verde color_cinza" id="btn_post" disabled>Cadastrar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block footer %}
+    {% include 'partials/footer/footer_form.html' %}
+{% endblock %}

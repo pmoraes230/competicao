@@ -1,0 +1,47 @@
+{% load static %}
+<header class="container">
+    <nav class="navbar navbar-expand-lg">
+        <a href="{% url "home" %}" class="navbar-brand">
+            <img src="{% static 'icons/senac_green.svg' %}" alt="icone_senac">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+            aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle color_verde font-size-24 bold" href="#" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        Área cliente
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url "registe_client" %}">Compra ingresso</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle color_verde font-size-24 bold" href="#" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        Área Funcionario
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url "register_user" %}">Cadastro Usuário</a></li>
+                        <li><a class="dropdown-item" href="#">Perfil</a></li>
+                        <li><a class="dropdown-item" href="#">Cadastro Evento</a></li>
+                        <li><a class="dropdown-item" href="#">Cadastro Setor</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+                <a class="font-size-24 bold color_verde link_style" href="{% url "logout" %}">Sair</a>
+            </li>
+        </ul>
+    </nav>
+</header>

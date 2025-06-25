@@ -1,0 +1,13 @@
+.eye_icon {
+    position: absolute;
+    left: 63%;
+    border: none;
+}
+
+.dropdown-item {
+    color: var(--marrom);
+}
+
+.display_visibled {
+    display: none;
+}

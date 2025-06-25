@@ -1,0 +1,49 @@
+.password_container {
+    display: flex;
+    align-items: center;
+}
+
+.eye_icon {
+    position: absolute;
+    left: 40%;
+    border: none;
+}
+
+.btn:hover {
+    color: var(--bs-btn-hover-color);
+    background-color: var(--bs-btn-hover-bg);
+}
+
+.btn_login {
+    background-color: var(--green_black);
+    font-weight: bold;
+    letter-spacing: 3px;
+} 
+
+.btn_login:hover {
+    background-color: var(--marrom_claro);
+}
+
+.position_img {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+    width: 50%;
+}
+
+.container_login {
+    padding: 15% 22% 0 0;
+}
+
+.line {
+    background-color: var(--marrom);
+    height: 5px;
+    width: 100%;
+    margin: 1rem 0;
+    position: relative;
+}
+
+.link_style {
+    text-decoration: none;
+}
