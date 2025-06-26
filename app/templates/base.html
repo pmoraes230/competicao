@@ -33,5 +33,56 @@
     <script src="{% static 'scripts/activate_button.js' %}" type="module"></script>
     <script src="{% static 'scripts/mask_price.js' %}"></script>
     <script src="{% static 'scripts/mask_limit.js' %}"></script>
+
+    <script>
+    let setorCount = 1;
+    const remainingSeats = {{ context.remaining_seats|default:0 }};
+    const setorFields = document.getElementById('setor-fields');
+    const addSetorButton = document.getElementById('add-setor');
+    const submitButton = document.getElementById('submit_setor');
+    const seatsAlert = document.getElementById('seats_alert');
+
+    addSetorButton.addEventListener('click', function() {
+        const newRow = document.createElement('div');
+        newRow.className = 'setor-row mb-3';
+        newRow.innerHTML = `
+            <div class="mb-3">
+                <label for="nome_setor_${setorCount}" class="form-label color_marrom">Nome do setor:</label>
+                <input type="text" class="form-control" id="nome_setor_${setorCount}" name="nome_setor[]" placeholder="Nome aqui" required>
+            </div>
+            <div class="mb-3">
+                <label for="limit_seats_${setorCount}" class="form-label color_marrom">Quantidade de cadeiras:</label>
+                <input type="text" class="form-control" id="limit_seats_${setorCount}" name="limit_seats[]" placeholder="Quantidade de cadeiras" required>
+            </div>
+        `;
+        setorFields.appendChild(newRow);
+        setorCount++;
+    });
+
+    document.getElementById('setor-form').addEventListener('submit', function(e) {
+        let totalSeats = 0;
+        const seatsInputs = document.getElementsByName('limit_seats[]');
+        for (let input of seatsInputs) {
+            const value = parseFloat(input.value.replace(/\D/g, '')) || 0;
+            totalSeats += value;
+        }
+        if (totalSeats > remainingSeats) {
+            e.preventDefault();
+            seatsAlert.style.display = 'block';
+            submitButton.disabled = true;
+        } else {
+            seatsAlert.style.display = 'none';
+            submitButton.disabled = false;
+        }
+    });
+
+    // Validação em tempo real para cada campo
+    document.querySelectorAll('[name="limit_seats[]"]').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            e.target.value = value;
+        });
+    });
+</script>
 </body>
 </html>

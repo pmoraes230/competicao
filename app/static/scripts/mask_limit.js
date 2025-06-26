@@ -1,6 +1,13 @@
 const limit_peaple = document.getElementById('peaple_limit');
+const limit_seats = document.getElementById('limit_seats');
 
-limit_peaple.addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '')
-    e.target.value = value;
+const handleInput = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    e.target.value = value
+}
+
+[limit_peaple, limit_seats].forEach(element => {
+    if(element){
+        element.addEventListener('input', handleInput)
+    }
 })

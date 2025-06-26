@@ -58,7 +58,7 @@ class Perfil(models.Model):
 
 class Setor(models.Model):
     nome = models.CharField(max_length=50)
-    qtd_cadeira = models.FloatField()
+    qtd_cadeira = models.PositiveBigIntegerField()
     id_evento = models.ForeignKey('Evento', on_delete=models.CASCADE, db_column='id_evento')
 
     class Meta:

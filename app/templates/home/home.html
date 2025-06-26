@@ -27,6 +27,9 @@
                 <div class="btn_container text-center">
                     <a href="#" class="btn btn-primary btn_card">Saber Mais</a>
                 </div>
+                {% comment %} <div class="btn_container text-center">
+                    <a href="{% url 'edit_event' event.id %}" class="btn btn-primary btn_card">Atualizar evento</a>
+                </div> {% endcomment %}
             </article>
         </div>
         {% empty %}

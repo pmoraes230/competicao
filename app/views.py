@@ -1,3 +1,5 @@
+from django.db.models import Sum
+from django.http import HttpResponseRedirect
 from functools import wraps
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib import messages
@@ -230,10 +232,121 @@ def register_events(request):
             event.full_clean()
             event.save()
             
+            request.session['last_event_id'] = event.id
             messages.success(request, 'Evento salvo com sucesso!')
-            return redirect('register_events')
+            return redirect('register_setor')
         except ValueError as ve:
             messages.error(request, f'Erro ao salvar evento {str(ve)}')
             return redirect('register_events')
     
     return render(request, 'reg_eventos/reg_evento.html', context)
+
+@role_required('Administrador', 'Staff')
+def register_setor(request):
+    context = get_user_profile(request)
+    event_id = request.session.get('last_event_id')
+
+    if not event_id:
+        messages.error(request, 'Nenhum evento criado. Crie um evento primeiro.')
+        return redirect('register_events')
+
+    if request.method == 'POST':
+        setores_data = []
+        nome_setores = request.POST.getlist('nome_setor[]')  # Lista de nomes
+        limit_seats = request.POST.getlist('limit_seats[]')  # Lista de quantidades
+
+        if not nome_setores or not limit_seats:
+            messages.error(request, 'Pelo menos um setor deve ser preenchido.')
+            return redirect('register_setor')
+
+        try:
+            event = models.Evento.objects.get(id=event_id)
+            total_existing_seats = models.Setor.objects.filter(id_evento_id=event_id).aggregate(total=Sum('qtd_cadeira'))['total'] or 0
+            total_new_seats = sum(float(seat) for seat in limit_seats if seat)
+
+            if total_existing_seats + total_new_seats > event.cpt_pessoas:
+                messages.error(request, f'A soma das cadeiras ({total_existing_seats + total_new_seats}) excede o limite de pessoas do evento ({event.cpt_pessoas}).')
+                return redirect('register_setor')
+
+            for nome, seats in zip(nome_setores, limit_seats):
+                if nome and seats:  # Só cria se ambos os campos estiverem preenchidos
+                    setor = models.Setor.objects.create(
+                        nome=nome,
+                        qtd_cadeira=float(seats),
+                        id_evento_id=event_id
+                    )
+                    setor.full_clean()
+                    setor.save()
+                    setores_data.append({'nome': nome, 'seats': seats})
+
+            messages.success(request, f'{len(setores_data)} setor(es) cadastrado(s) com sucesso!')
+            return redirect('register_setor')
+        except models.Evento.DoesNotExist:
+            messages.error(request, 'Evento não encontrado.')
+            return redirect('register_events')
+        except ValueError as ve:
+            messages.error(request, f'Erro ao salvar setor: {str(ve)}')
+            return redirect('register_setor')
+
+    # Preenche o contexto com o evento
+    try:
+        event = models.Evento.objects.get(id=event_id)
+        context['event'] = event
+        context['remaining_seats'] = max(0, event.cpt_pessoas - (models.Setor.objects.filter(id_evento_id=event_id).aggregate(total=Sum('qtd_cadeira'))['total'] or 0))
+    except models.Evento.DoesNotExist:
+        del request.session['last_event_id']
+        messages.error(request, 'Evento não encontrado.')
+        return redirect('register_events')
+
+    return render(request, 'reg_setor/reg_setor.html', context)
+
+@role_required('Administrador', 'Staff')  # Adicione o decorador para restringir acesso
+def edit_event(request, id):
+    context = get_user_profile(request)
+    
+    try:
+        update_event = models.Evento.objects.get(id=id)
+    except models.Evento.DoesNotExist:
+        messages.error(request, 'Evento não encontrado.')
+        return redirect('register_events')
+
+    if request.method == 'POST':
+        name_event = request.POST.get('nome')
+        date_event = request.POST.get('date')
+        hour_event = request.POST.get('hour')
+        image_event = request.POST.get('imagem')
+        price_event = request.POST.get('price')
+        limit_peaple = request.POST.get('peaple_limit')
+        adress = request.POST.get('adress')
+        
+        if not all([name_event, date_event, hour_event, image_event, price_event, limit_peaple, adress]):
+            messages.error(request, 'Todos os campos são obrigatórios')
+            return redirect('edit_event', id=id)  # Redireciona de volta para a mesma página
+
+        try:
+            user_id = request.session.get('user_id')
+            if not user_id:
+                messages.error(request, 'Usuário não autenticado.')
+                return redirect('login')
+            
+            update_event.nome = name_event
+            update_event.data_evento = date_event
+            update_event.horario = hour_event
+            update_event.cpt_pessoas = limit_peaple
+            update_event.imagem = image_event
+            update_event.local_evento = adress
+            update_event.preco_evento = price_event
+            update_event.id_usuario_id = user_id  # Ajuste para id_usuario_id
+
+            update_event.full_clean()
+            update_event.save()
+            
+            messages.success(request, 'Evento atualizado')
+            return HttpResponseRedirect(reverse('edit_event', args=[int(id)]))
+        except ValueError as ve:
+            messages.error(request, f'Erro ao atualizar evento: {str(ve)}')
+            return redirect('edit_event', id=id)
+
+    # Adiciona o evento ao contexto para o formulário
+    context['event'] = update_event
+    return render(request, 'reg_evento/edi_evento.html', context)
