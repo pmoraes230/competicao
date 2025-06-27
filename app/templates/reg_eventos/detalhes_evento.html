@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalhes do Evento - {{ event.nome|title }}{% endblock %}
+
+{% block content %}
+{% block header %}
+    {% include "partials/header/header_marrom.html" %}
+{% endblock %}
+
+{% if messages %}
+<ul class="messages list-unstyled text-center my-3">
+    {% for message in messages %}
+    <li class="{% if message.tags %} color_marrom {{ message.tags }}{% endif %}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<main class="container container_deteils py-5">
+    <div class="row">
+        <!-- Imagem do Evento -->
+        <div class="col-md-3 col-sm-12 image_event mb-4">
+            {% if event.imagem %}
+                <img src="{{ event.imagem.url }}" alt="{{ event.nome }}" class="image_deteils img-fluid rounded shadow">
+            {% else %}
+                <img src="{% static 'images/default_event.jpg' %}" alt="Imagem padrão do evento" class="image_deteils img-fluid rounded shadow">
+            {% endif %}
+        </div>
+        
+        <!-- Detalhes do Evento -->
+        <div class="col-md-6 col-sm-12 content_deteils">
+            <div class="deteils_event">
+                <h1 class="color_marrom mb-4">{{ event.nome|title }}</h1>
+                
+                <div class="row g-3">
+                    <div class="col-md-6 col-sm-12">
+                        <div class="hour_event d-flex align-items-center flex-nowrap mb-2">
+                            <img src="{% static 'icons/hour.svg' %}" alt="Ícone de horário" class="icons me-2" width="24" height="24">
+                            <p class="color_marrom mb-0">
+                                {{ event.data_evento|date:"d/m/Y" }} às {{ event.horario|time:"H:i" }}
+                            </p>
+                        </div>
+                        <div class="location_event d-flex align-items-center flex-nowrap mb-2">
+                            <img src="{% static 'icons/pin.svg' %}" alt="Ícone de localização" class="icons me-2" width="24" height="24">
+                            <p class="color_marrom mb-0">{{ event.local_evento|truncatechars:30 }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-sm-12">
+                        <div class="price_event d-flex align-items-center flex-nowrap mb-2">
+                            <img src="{% static 'icons/ticket.svg' %}" alt="Ícone de preço" class="icons me-2" width="24" height="24">
+                            <p class="color_marrom mb-0">
+                                {% if event.preco_evento %}
+                                    R$ {{ event.preco_evento|floatformat:2 }}
+                                {% else %}
+                                    Gratuito
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="capacity_event d-flex align-items-center flex-nowrap mb-2">
+                            <img src="{% static 'icons/people.svg' %}" alt="Ícone de capacidade" class="icons me-2" width="24" height="24">
+                            <p class="color_marrom mb-0">Capacidade: {{ event.cpt_pessoas|floatformat:0 }} pessoas</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulário de Compra -->
+                {% if cliente %}
+                    <form method="post" action="{% url 'buy_ticket' event.id %}" class="mt-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="setor" class="form-label color_marrom">Selecione um Setor:</label>
+                            <select name="setor" id="setor" class="form-select" required>
+                                <option value="">Escolha um setor</option>
+                                {% for setor in setores %}
+                                    {% if setor.qtd_cadeira > 0 %}
+                                        <option value="{{ setor.id }}">{{ setor.nome }} ({{ setor.qtd_cadeira }} cadeiras disponíveis)</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantidade" class="form-label color_marrom">Quantidade de Ingressos:</label>
+                            <input type="number" name="quantidade" id="quantidade" class="form-control" min="1" value="1" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Comprar Ingressos</button>
+                    </form>
+                {% else %}
+                    <p class="mt-4 color_marrom">Por favor, cadastre-se antes de comprar ingressos.</p>
+                    <a href="{% url 'register_client' event.id %}" class="btn btn-primary mt-2">Cadastrar Cliente</a>
+                {% endif %}
+
+                {% if messages and 'Compra realizada com sucesso!' in messages.get_messages %}
+                    <div class="mt-4">
+                        <p class="color_marrom">Baixe seu ticket:</p>
+                        <a href="{% url 'download_ticket' venda.id %}" class="btn btn-success">Download Ticket</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</main>
+
+{% block footer %}
+    {% include 'partials/footer/footer_form.html' %}
+{% endblock %}
+{% endblock %}

@@ -1,3 +1,8 @@
+from django.utils import timezone
+import qrcode
+from io import BytesIO
+from django.core.files.base import ContentFile
+from django.http import HttpResponse
 from django.db.models import Sum
 from django.http import HttpResponseRedirect
 from functools import wraps
@@ -24,20 +29,28 @@ def get_user_profile(request):
     return {'user_name': '', 'is_authenticated': False}
 
 def role_required(*roles):
-    def decorator(view_funv):
-        @wraps(view_funv)
+    def decorator(view_func):
+        @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             user_profile = get_user_profile(request)
-            user_role = user_profile.get('user_role')
+            
+            if not user_profile or not isinstance(user_profile, dict):
+                messages.error(request, 'Erro ao verificar sua sessão. Faça login novamente.')
+                return redirect(reverse('login'))
 
-            if not user_profile.get('is_authenticated'):
-                messages.error(request, 'Você não está logado')
-                return [reverse('login')]
+            # Verifica autenticação
+            if not user_profile.get('is_authenticated', False):
+                messages.error(request, 'Você não está logado.')
+                return redirect(reverse('login'))
 
-            if user_role not in roles:
-                messages.error(request, 'Você não tem permissão para acessar esta página')
-                return redirect("login")
-            return view_funv(request, *args, **kwargs)
+            # Verifica permissão
+            user_profile = get_user_profile(request)
+            if user_profile.get('user_role') not in roles:
+                messages.error(request, 'Você não tem permissão para acessar esta página.')
+                return redirect('home')
+            return view_func(request, *args, **kwargs)  
+
+            return view_func(request, *args, **kwargs)
         return _wrapped_view
     return decorator
 
@@ -65,8 +78,6 @@ def login(request):
     except models.Usuario.DoesNotExist:
         messages.error(request, 'Usuário não encontrado')
         return render(request, 'login/login.html')
-    
-    return render(request, 'login/login.html')
     
 def logout_view(request):
     logout(request)
@@ -130,7 +141,8 @@ def register_user(request):
     })
     return render(request, 'reg_usuario/reg_usuario.html', context)
 
-def register_client(request):
+@role_required('Administrador', 'Staff')
+def register_client(request, id):
     context = get_user_profile(request)
     
     if request.method == 'POST':
@@ -139,12 +151,12 @@ def register_client(request):
         cpf_client = request.POST.get('cpf')
         
         if not name_client or not email_client or not cpf_client:
-            messages.error(request, 'Todos os campos são obrigátorios')
-            return redirect('registe_client')
+            messages.error(request, 'Todos os campos são obrigatórios.')
+            return redirect(reverse('register_client', args=[id]))
         
         if models.Cliente.objects.filter(cpf=cpf_client).exists():
             messages.error(request, 'Cliente já cadastrado!')
-            return redirect('registe_client')
+            return redirect(reverse('register_client', args=[id]))
         
         try:
             client = models.Cliente.objects.create(
@@ -156,11 +168,15 @@ def register_client(request):
             client.save()
             
             messages.success(request, 'Cliente cadastrado com sucesso!')
-            return redirect('registe_client')
+            # Armazenar o cliente_id na sessão e redirecionar para a compra
+            request.session['cliente_id'] = client.id
+            return redirect(reverse('buy_ticket', args=[id]))
         except ValueError as ve:
-            messages.error(request, f'Erro ao salvar cliente {str(ve)}')
-            return redirect('registe_client')
+            messages.error(request, f'Erro ao salvar cliente: {str(ve)}')
+            return redirect(reverse('register_client', args=[id]))
     
+    # Adicionar o event_id ao contexto para uso no template
+    context['event_id'] = id
     return render(request, 'reg_cliente/reg_cliente.html', context)
 
 def register_profile(request):
@@ -314,14 +330,20 @@ def edit_event(request, id):
         name_event = request.POST.get('nome')
         date_event = request.POST.get('date')
         hour_event = request.POST.get('hour')
-        image_event = request.POST.get('imagem')
+        image_event = request.FILES.get('imagem')
         price_event = request.POST.get('price')
         limit_peaple = request.POST.get('peaple_limit')
         adress = request.POST.get('adress')
         
-        if not all([name_event, date_event, hour_event, image_event, price_event, limit_peaple, adress]):
-            messages.error(request, 'Todos os campos são obrigatórios')
-            return redirect('edit_event', id=id)  # Redireciona de volta para a mesma página
+        # Converte vírgulas para pontos nos campos numéricos
+        try:
+            if limit_peaple:
+                limit_peaple = float(limit_peaple.replace(',', '.'))  # Converte "5000,0" para 5000.0
+            if price_event:
+                price_event = float(price_event.replace(',', '.'))  # Converte "2000,00" para 2000.00
+        except ValueError as ve:
+            messages.error(request, 'Formato inválido para preço ou limite de pessoas.')
+            return redirect('edit_event', id=id)
 
         try:
             user_id = request.session.get('user_id')
@@ -333,7 +355,8 @@ def edit_event(request, id):
             update_event.data_evento = date_event
             update_event.horario = hour_event
             update_event.cpt_pessoas = limit_peaple
-            update_event.imagem = image_event
+            if image_event:
+                update_event.imagem = image_event
             update_event.local_evento = adress
             update_event.preco_evento = price_event
             update_event.id_usuario_id = user_id  # Ajuste para id_usuario_id
@@ -349,4 +372,134 @@ def edit_event(request, id):
 
     # Adiciona o evento ao contexto para o formulário
     context['event'] = update_event
-    return render(request, 'reg_evento/edi_evento.html', context)
+    
+    return render(request, 'reg_eventos/edit_evento.html', context)
+
+@role_required('Administrador', 'Staff')
+def delete_event(request, id):
+    try:
+        event = models.Evento.objects.get(id=id)
+        
+        if request.method == 'POST':
+            event.delete()
+            messages.success(request, 'Evento excluído com sucesso!')
+            return redirect('home')
+        
+        context = {
+            'event': event,
+            **get_user_profile(request)
+        }
+        
+        return render(request, 'reg_eventos/delete_evento.html', context)
+    except models.Evento.DoesNotExist:
+        messages.error(request, 'Evento não encontrado.')
+        return redirect('home')
+
+
+@role_required('Cliente', 'Administrador', 'Staff')
+def buy_ticket(request, event_id):
+    try:
+        event = models.Evento.objects.get(id=event_id)
+        setores = models.Setor.objects.filter(id_evento_id=event_id)
+
+        # Combinar data_evento e horario em um datetime com fuso horário
+        if event.horario:
+            combined_datetime = timezone.make_aware(timezone.datetime.combine(event.data_evento.date(), event.horario))
+            event.data_evento = timezone.localtime(combined_datetime)
+        elif isinstance(event.data_evento, timezone.datetime):
+            event.data_evento = timezone.localtime(event.data_evento)
+        else:
+            event.data_evento = timezone.make_aware(timezone.datetime.combine(event.data_evento, timezone.datetime.min.time()))
+
+        if request.method == 'POST':
+            setor_id = request.POST.get('setor')
+            quantidade = int(request.POST.get('quantidade', 1))
+
+            if not setor_id:
+                messages.error(request, 'Por favor, selecione um setor.')
+                return redirect(reverse('buy_ticket', args=[event_id]))
+
+            setor = models.Setor.objects.get(id=setor_id)
+
+            if quantidade < 1:
+                messages.error(request, 'A quantidade deve ser pelo menos 1.')
+                return redirect(reverse('buy_ticket', args=[event_id]))
+
+            if setor.qtd_cadeira < quantidade:
+                messages.error(request, f'Só há {setor.qtd_cadeira} cadeiras disponíveis neste setor.')
+                return redirect(reverse('buy_ticket', args=[event_id]))
+
+            cliente_id = request.session.get('cliente_id')
+            if not cliente_id:
+                messages.error(request, 'Por favor, cadastre-se antes de comprar.')
+                return redirect(reverse('register_client', args=[event_id]))
+
+            cliente = models.Cliente.objects.get(id=cliente_id)
+
+            if setor.qtd_cadeira >= quantidade:
+                for _ in range(quantidade):
+                    venda = models.Venda(
+                        id_evento=event,
+                        id_cliente=cliente,
+                        data_venda=timezone.now(),
+                        valor=event.preco_evento or 0.00
+                    )
+                    venda.save()
+                    setor.qtd_cadeira -= 1
+                    setor.save()
+
+                qr_data = f"Evento: {event.nome}\nCliente: {cliente.nome}\nCPF: {cliente.cpf}\nData: {venda.data_venda}\nValor: R${venda.valor} (x{quantidade} ingressos)"
+                qr = qrcode.QRCode(version=1, box_size=10, border=5)
+                qr.add_data(qr_data)
+                qr.make(fit=True)
+                img = qr.make_image(fill='black', back_color='white')
+                buffer = BytesIO()
+                img.save(buffer, format='PNG')
+                ticket_file = ContentFile(buffer.getvalue(), name=f'ticket_{venda.id}.png')
+
+                messages.success(request, f'Compra de {quantidade} ingresso(s) realizada com sucesso! Baixe seu ticket abaixo.')
+                response = HttpResponse(buffer.getvalue(), content_type='image/png')
+                response['Content-Disposition'] = f'attachment; filename=ticket_{venda.id}.png'
+                return response
+            else:
+                messages.error(request, 'Não há cadeiras suficientes disponíveis neste setor.')
+                return redirect(reverse('buy_ticket', args=[event_id]))
+
+        cliente_id = request.session.get('cliente_id')
+        cliente = models.Cliente.objects.get(id=cliente_id) if cliente_id else None
+
+        context = {
+            'event': event,
+            'setores': setores,
+            'cliente': cliente,
+        }
+        return render(request, 'reg_eventos/detalhes_evento.html', context)
+
+    except models.Evento.DoesNotExist:
+        messages.error(request, 'Evento não encontrado.')
+        return redirect('home')
+    except models.Cliente.DoesNotExist:
+        messages.error(request, 'Cliente não encontrado. Por favor, cadastre-se novamente.')
+        return redirect(reverse('register_client', args=[event_id]))
+
+# Ajuste a view event_details
+def event_details(request, id):
+    try:
+        event = models.Evento.objects.get(id=id)
+        # Combinar data_evento e horario em um datetime com fuso horário
+        if event.horario:
+            combined_datetime = timezone.make_aware(timezone.datetime.combine(event.data_evento.date(), event.horario))
+            event.data_evento = timezone.localtime(combined_datetime)
+        elif isinstance(event.data_evento, timezone.datetime):
+            event.data_evento = timezone.localtime(event.data_evento)
+        else:
+            event.data_evento = timezone.make_aware(timezone.datetime.combine(event.data_evento, timezone.datetime.min.time()))
+        user_profile = get_user_profile(request)
+        context = {
+            'event': event,
+            'user_profile': user_profile
+        }
+        return redirect(reverse('register_client', args=[id]))
+    except models.Evento.DoesNotExist:
+        messages.error(request, 'Evento não encontrado.')
+        return redirect('home')

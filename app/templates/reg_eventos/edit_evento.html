@@ -40,11 +40,11 @@
         </div>
         <div class="mb-3">
             <label for="price" class="form-label color_marrom">Preço:</label>
-            <input type="text" class="form-control" id="price" name="price" value="{{ event.preco_evento }}" required>
+            <input type="text" class="form-control" id="price" name="price" value="{{ event.preco_evento }}">
         </div>
         <div class="mb-3">
             <label for="peaple_limit" class="form-label color_marrom">Limite de Pessoas:</label>
-            <input type="text" class="form-control" id="peaple_limit" name="peaple_limit" value="{{ event.cpt_pessoas }}" required>
+            <input type="text" step="1" class="form-control" id="peaple_limit" name="peaple_limit" value="{{ event.cpt_pessoas }}" required>
         </div>
         <div class="mb-3">
             <label for="adress" class="form-label color_marrom">Endereço:</label>
@@ -52,11 +52,12 @@
         </div>
         <div class="text-center">
             <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            <a href="{% url 'delete_event' event.id %}" class="btn btn-danger btn_card">Excluir evento</a>
         </div>
     </form>
 </div>
 {% endblock %}
 
 {% block footer %}
-    {% include 'partials/footer/footer_form.html' %}
+    {% include 'partials/footer/footer.html' %}
 {% endblock %}

@@ -8,6 +8,13 @@
     {% block header %}
         {% include 'partials/header/header.html' %}
     {% endblock %}
+    {% if messages %}
+        <ul class="messages list-unstyled text-center my-3">
+        {% for message in messages %}
+            <li class="{% if message.tags %} color_verde {{ message.tags }}{% endif %}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
     <div class="container text-center center">
         <h1 class="color_verde h1 font-big">Senac Music Hall</h1>
     </div>
@@ -25,11 +32,11 @@
                     <h4 class="text-center">{{ evento.data_evento|date:"d/m/Y" }}</h4>
                 </div>
                 <div class="btn_container text-center">
-                    <a href="#" class="btn btn-primary btn_card">Saber Mais</a>
+                    <a href="{% url 'event_details' evento.id %}" class="btn btn-primary btn_card">Saber Mais</a>
                 </div>
-                {% comment %} <div class="btn_container text-center">
-                    <a href="{% url 'edit_event' event.id %}" class="btn btn-primary btn_card">Atualizar evento</a>
-                </div> {% endcomment %}
+                <div class="btn_container text-center">
+                    <a href="{% url 'edit_event' evento.id %}" class="btn btn-primary btn_card">Atualizar evento</a>
+                </div>
             </article>
         </div>
         {% empty %}

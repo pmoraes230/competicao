@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class Cadeira(models.Model):
     status_cadeira = models.CharField(max_length=10)
@@ -28,10 +29,10 @@ class Cliente(models.Model):
 
 class Evento(models.Model):
     nome = models.CharField(max_length=20)
-    data_evento = models.DateField()
-    horario = models.TimeField()
+    data_evento = models.DateTimeField(default=timezone.now)
+    horario = models.TimeField(null=True, blank=True)
     cpt_pessoas = models.FloatField()
-    imagem = models.ImageField(upload_to='eventos')
+    imagem = models.ImageField(upload_to='eventos/', null=True, blank=True)
     local_evento = models.CharField(max_length=20)
     preco_evento = models.DecimalField(max_digits=10, decimal_places=2)
     id_usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE, db_column='id_usuario')
@@ -39,7 +40,7 @@ class Evento(models.Model):
     class Meta:
         managed = False
         db_table = 'evento'
-        
+
     def __str__(self):
         return self.nome
 
@@ -75,7 +76,7 @@ class Usuario(models.Model):
     login = models.CharField(max_length=20)
     senha = models.CharField(max_length=230)
     cpf = models.CharField(max_length=14)
-    imagem = models.ImageField(upload_to='usuarios')
+    imagem = models.ImageField(upload_to='usuarios/', null=True, blank=True)
     id_perfil = models.ForeignKey('Perfil', on_delete=models.CASCADE, db_column='id_perfil')
 
     class Meta:
