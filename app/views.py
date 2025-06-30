@@ -1,5 +1,7 @@
 from django.utils import timezone
 import qrcode
+import uuid
+from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
@@ -58,7 +60,7 @@ def login(request):
     if request.method == 'GET':
         return render(request, 'login/login.html')
     
-    username = request.POST.get('login')
+    username = request.POST.get('login')  # Pode ser CPF ou email
     password = request.POST.get('password')
     
     if not username or not password:
@@ -66,7 +68,14 @@ def login(request):
         return render(request, 'login/login.html')
     
     try:
-        user = models.Usuario.objects.get(login=username)
+        # Buscar usuário pelo CPF ou email
+        user = models.Usuario.objects.filter(cpf=username).first() or models.Usuario.objects.filter(e_mail=username).first()
+        
+        if not user:
+            messages.error(request, 'Usuário não encontrado')
+            return render(request, 'login/login.html')
+        
+        # Verificar senha
         if check_password(password, user.senha):
             messages.success(request, 'Login realizado com sucesso!')
             request.session['user_id'] = user.id
@@ -75,8 +84,8 @@ def login(request):
             messages.error(request, 'Senha incorreta.')
             return redirect('login')
         
-    except models.Usuario.DoesNotExist:
-        messages.error(request, 'Usuário não encontrado')
+    except Exception as e:
+        messages.error(request, f'Ocorreu um erro: {str(e)}')
         return render(request, 'login/login.html')
     
 def logout_view(request):
@@ -90,6 +99,7 @@ def home(request):
     context['eventos'] = models.Evento.objects.all()
     return render(request, 'home/home.html', context)
 
+@role_required('Administrador')
 def register_user(request):
     context = get_user_profile(request)
     
@@ -141,7 +151,7 @@ def register_user(request):
     })
     return render(request, 'reg_usuario/reg_usuario.html', context)
 
-@role_required('Administrador', 'Staff')
+@role_required('Administrador', 'Staff', 'Vendedor')
 def register_client(request, id):
     context = get_user_profile(request)
     
@@ -154,10 +164,6 @@ def register_client(request, id):
             messages.error(request, 'Todos os campos são obrigatórios.')
             return redirect(reverse('register_client', args=[id]))
         
-        if models.Cliente.objects.filter(cpf=cpf_client).exists():
-            messages.error(request, 'Cliente já cadastrado!')
-            return redirect(reverse('register_client', args=[id]))
-        
         try:
             client = models.Cliente.objects.create(
                 nome=name_client,
@@ -168,9 +174,10 @@ def register_client(request, id):
             client.save()
             
             messages.success(request, 'Cliente cadastrado com sucesso!')
-            # Armazenar o cliente_id na sessão e redirecionar para a compra
+            # Armazenar o cliente_id na sessão
             request.session['cliente_id'] = client.id
-            return redirect(reverse('buy_ticket', args=[id]))
+            # Redirecionar de volta para os detalhes do evento
+            return redirect(reverse('event_details', args=[id]))
         except ValueError as ve:
             messages.error(request, f'Erro ao salvar cliente: {str(ve)}')
             return redirect(reverse('register_client', args=[id]))
@@ -179,6 +186,7 @@ def register_client(request, id):
     context['event_id'] = id
     return render(request, 'reg_cliente/reg_cliente.html', context)
 
+@role_required('Administrador')
 def register_profile(request):
     context = get_user_profile(request)
     
@@ -260,16 +268,22 @@ def register_events(request):
 @role_required('Administrador', 'Staff')
 def register_setor(request):
     context = get_user_profile(request)
-    event_id = request.session.get('last_event_id')
+    
+    # Recuperar todos os eventos para exibir no formulário
+    eventos = models.Evento.objects.all()
+    context['eventos'] = eventos
 
-    if not event_id:
-        messages.error(request, 'Nenhum evento criado. Crie um evento primeiro.')
-        return redirect('register_events')
+    # Verificar se há um evento na sessão ou se o usuário selecionou um evento
+    event_id = request.POST.get('event_id') or request.session.get('last_event_id')
 
     if request.method == 'POST':
-        setores_data = []
         nome_setores = request.POST.getlist('nome_setor[]')  # Lista de nomes
         limit_seats = request.POST.getlist('limit_seats[]')  # Lista de quantidades
+        event_id = request.POST.get('event_id')  # Evento selecionado no formulário
+
+        if not event_id:
+            messages.error(request, 'Por favor, selecione um evento antes de cadastrar os setores.')
+            return redirect('register_setor')
 
         if not nome_setores or not limit_seats:
             messages.error(request, 'Pelo menos um setor deve ser preenchido.')
@@ -293,28 +307,92 @@ def register_setor(request):
                     )
                     setor.full_clean()
                     setor.save()
-                    setores_data.append({'nome': nome, 'seats': seats})
 
-            messages.success(request, f'{len(setores_data)} setor(es) cadastrado(s) com sucesso!')
+            messages.success(request, f'{len(nome_setores)} setor(es) cadastrado(s) com sucesso!')
             return redirect('register_setor')
         except models.Evento.DoesNotExist:
             messages.error(request, 'Evento não encontrado.')
-            return redirect('register_events')
+            return redirect('register_setor')
         except ValueError as ve:
             messages.error(request, f'Erro ao salvar setor: {str(ve)}')
             return redirect('register_setor')
 
-    # Preenche o contexto com o evento
-    try:
-        event = models.Evento.objects.get(id=event_id)
-        context['event'] = event
-        context['remaining_seats'] = max(0, event.cpt_pessoas - (models.Setor.objects.filter(id_evento_id=event_id).aggregate(total=Sum('qtd_cadeira'))['total'] or 0))
-    except models.Evento.DoesNotExist:
-        del request.session['last_event_id']
-        messages.error(request, 'Evento não encontrado.')
-        return redirect('register_events')
+    # Preenche o contexto com o evento selecionado (se houver)
+    if event_id:
+        try:
+            event = models.Evento.objects.get(id=event_id)
+            context['event'] = event
+            context['remaining_seats'] = max(0, event.cpt_pessoas - (models.Setor.objects.filter(id_evento_id=event_id).aggregate(total=Sum('qtd_cadeira'))['total'] or 0))
+        except models.Evento.DoesNotExist:
+            if 'last_event_id' in request.session:
+                del request.session['last_event_id']
+            messages.error(request, 'Evento não encontrado.')
+            return redirect('register_setor')
 
     return render(request, 'reg_setor/reg_setor.html', context)
+
+def list_setor(request):
+    context = get_user_profile(request)
+    
+    if not context['is_authenticated']:
+        messages.error(request, 'Você não está logado.')
+        return redirect('login')
+    
+    setores = models.Setor.objects.all()
+    context['setores'] = setores
+    
+    return render(request, 'reg_setor/list_setor.html', context)
+
+def update_setor(request, id):
+    context = get_user_profile(request)
+    
+    try:
+        setor = models.Setor.objects.get(id=id)
+    except models.setor.DoesesNotExist:
+        messages.error(request, 'Setor não encontrado.')
+        return redirect('list_setor')
+    
+    if request.method == 'POST':
+        nome_setor = request.POST.get('nome_setor')
+        limit_seats = request.POST.get('limit_seats')
+
+        if not nome_setor or not limit_seats:
+            messages.error(request, 'Todos os campos são obrigatórios.')
+            return redirect('update_setor', id=id)
+
+        try:
+            setor.nome = nome_setor
+            setor.qtd_cadeira = float(limit_seats.replace(',', '.'))  # Converte "5000,0" para 5000.0
+            setor.full_clean()
+            setor.save()
+            
+            messages.success(request, 'Setor atualizado com sucesso!')
+            return redirect('list_setor')
+        except ValueError as ve:
+            messages.error(request, f'Erro ao atualizar setor: {str(ve)}')
+            return redirect('update_setor', id=id)
+    context.update({
+        'setor': setor,
+        'event': setor.id_evento,
+    })
+    
+    return render(request, 'reg_setor/update_setor.html', context)
+
+def delete_setor(request, id):
+    try:
+        setor = models.Setor.objects.get(id=id)
+        if request.method == 'POST':
+            setor.delete()
+            messages.success(request, 'Setor excluído com sucesso!')
+            return redirect('list_setor')
+        context = {
+            'setor': setor,
+            **get_user_profile(request)
+        }
+        return render(request, 'reg_setor/delete_setor.html', context)
+    except models.Setor.DoesNotExist:
+        messages.error(request, 'Setor não encontrado.')
+        return redirect('list_setor')
 
 @role_required('Administrador', 'Staff')  # Adicione o decorador para restringir acesso
 def edit_event(request, id):
@@ -395,10 +473,28 @@ def delete_event(request, id):
         messages.error(request, 'Evento não encontrado.')
         return redirect('home')
 
-
-@role_required('Cliente', 'Administrador', 'Staff')
-def buy_ticket(request, event_id):
+def delete_user(request, id):
     try:
+        user = models.Usuario.objects.get(id=id)
+        
+        if request.method == 'POST':
+            user.delete()
+            messages.success(request, 'Usuário excluído com sucesso!')
+            return redirect('list_users')
+        context = {
+            'user': user,
+            **get_user_profile(request)
+        }
+        return render(request, 'list_usuarios/delete_user.html', context)
+    except models.Usuario.DoesNotExist:
+        messages.error(request, 'Usuário não encontrado.')
+        return redirect('list_users')
+
+
+@role_required('Administrador', 'Staff', 'Vendedor')
+def event_details(request, event_id):
+    try:
+        # Recuperar evento e setores
         event = models.Evento.objects.get(id=event_id)
         setores = models.Setor.objects.filter(id_evento_id=event_id)
 
@@ -410,6 +506,43 @@ def buy_ticket(request, event_id):
             event.data_evento = timezone.localtime(event.data_evento)
         else:
             event.data_evento = timezone.make_aware(timezone.datetime.combine(event.data_evento, timezone.datetime.min.time()))
+
+        # Preparar o contexto
+        context = {
+            'event': event,
+            'setores': setores,
+            **get_user_profile(request)
+        }
+
+        # Verificar se há um cliente na sessão (opcional, para exibir formulário de compra)
+        cliente_id = request.session.get('cliente_id')
+        if cliente_id:
+            try:
+                cliente = models.Cliente.objects.get(id=cliente_id)
+                context['cliente'] = cliente
+            except models.Cliente.DoesNotExist:
+                del request.session['cliente_id']  # Remove cliente inválido da sessão
+
+        return render(request, 'reg_eventos/detalhes_evento.html', context)
+
+    except models.Evento.DoesNotExist:
+        messages.error(request, 'Evento não encontrado.')
+        return redirect('home')
+
+
+@role_required('Administrador', 'Staff', 'Vendedor')
+def buy_ticket(request, event_id):
+    try:
+        # Verificar se o cliente está cadastrado
+        cliente_id = request.session.get('cliente_id')
+        if not cliente_id:
+            messages.info(request, 'Por favor, cadastre um cliente antes de comprar ingressos.')
+            return redirect(reverse('register_client', args=[event_id]))
+
+        # Recuperar cliente e evento
+        cliente = models.Cliente.objects.get(id=cliente_id)
+        event = models.Evento.objects.get(id=event_id)
+        setores = models.Setor.objects.filter(id_evento_id=event_id)
 
         if request.method == 'POST':
             setor_id = request.POST.get('setor')
@@ -429,49 +562,67 @@ def buy_ticket(request, event_id):
                 messages.error(request, f'Só há {setor.qtd_cadeira} cadeiras disponíveis neste setor.')
                 return redirect(reverse('buy_ticket', args=[event_id]))
 
-            cliente_id = request.session.get('cliente_id')
-            if not cliente_id:
-                messages.error(request, 'Por favor, cadastre-se antes de comprar.')
-                return redirect(reverse('register_client', args=[event_id]))
+            total_price = quantidade * (event.preco_evento or 0.00)  # Calcula o preço total
+            for _ in range(quantidade):
+                # Gerar um ID único para o ingresso
+                ticket_id = str(uuid.uuid4())
 
-            cliente = models.Cliente.objects.get(id=cliente_id)
+                venda = models.Venda(
+                    id_evento=event,
+                    id_cliente=cliente,
+                    data_venda=timezone.now(),
+                    valor=event.preco_evento or 0.00
+                )
+                venda.save()
+                setor.qtd_cadeira -= 1
+                setor.save()
 
-            if setor.qtd_cadeira >= quantidade:
-                for _ in range(quantidade):
-                    venda = models.Venda(
-                        id_evento=event,
-                        id_cliente=cliente,
-                        data_venda=timezone.now(),
-                        valor=event.preco_evento or 0.00
-                    )
-                    venda.save()
-                    setor.qtd_cadeira -= 1
-                    setor.save()
+            # Gerar QR Code
+            qr_data = f"ID do Ingresso: {ticket_id}\nEvento: {event.nome}\nCliente: {cliente.nome}\nCPF: {cliente.cpf}\nData: {venda.data_venda.strftime('%d/%m/%Y %H:%M')}\nValor: R${total_price:.2f}"
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill='black', back_color='white')
 
-                qr_data = f"Evento: {event.nome}\nCliente: {cliente.nome}\nCPF: {cliente.cpf}\nData: {venda.data_venda}\nValor: R${venda.valor} (x{quantidade} ingressos)"
-                qr = qrcode.QRCode(version=1, box_size=10, border=5)
-                qr.add_data(qr_data)
-                qr.make(fit=True)
-                img = qr.make_image(fill='black', back_color='white')
-                buffer = BytesIO()
-                img.save(buffer, format='PNG')
-                ticket_file = ContentFile(buffer.getvalue(), name=f'ticket_{venda.id}.png')
+            # Converter a imagem do QR code para o modo RGB
+            qr_img = qr_img.convert('RGB')
 
-                messages.success(request, f'Compra de {quantidade} ingresso(s) realizada com sucesso! Baixe seu ticket abaixo.')
-                response = HttpResponse(buffer.getvalue(), content_type='image/png')
-                response['Content-Disposition'] = f'attachment; filename=ticket_{venda.id}.png'
-                return response
-            else:
-                messages.error(request, 'Não há cadeiras suficientes disponíveis neste setor.')
-                return redirect(reverse('buy_ticket', args=[event_id]))
+            # Criar uma imagem com informações abaixo do QR Code
+            img_width, img_height = qr_img.size
+            new_height = img_height + 150  # Adicionar espaço para texto
+            combined_img = Image.new('RGB', (img_width, new_height), 'white')
 
-        cliente_id = request.session.get('cliente_id')
-        cliente = models.Cliente.objects.get(id=cliente_id) if cliente_id else None
+            # Colar o QR code na imagem combinada
+            combined_img.paste(qr_img, (0, 0))
+
+            # Adicionar texto abaixo do QR Code
+            draw = ImageDraw.Draw(combined_img)
+            try:
+                font = ImageFont.load_default(size=20)  # Tente usar uma fonte com tamanho maior para melhor legibilidade
+            except AttributeError:
+                font = ImageFont.load_default()  # Fallback para versões mais antigas do Pillow
+
+            text = f"Evento: {event.nome}\nCliente: {cliente.nome}\nCPF: {cliente.cpf}\nData: {venda.data_venda.strftime('%d/%m/%Y %H:%M')}\nValor: R${total_price:.2f}\nID do Ingresso: {ticket_id}"
+            text_position = (10, img_height + 10)
+
+            # Adicionar texto na imagem
+            draw.multiline_text(text_position, text, fill='black', font=font)
+
+            # Salvar a imagem em um buffer
+            buffer = BytesIO()
+            combined_img.save(buffer, format='PNG')
+            ticket_file = ContentFile(buffer.getvalue(), name=f'ticket_{ticket_id}.png')
+
+            messages.success(request, f'Compra de {quantidade} ingresso(s) realizada com sucesso! Valor total: R${total_price:.2f}. Baixe seu ticket abaixo.')
+            response = HttpResponse(buffer.getvalue(), content_type='image/png')
+            response['Content-Disposition'] = f'attachment; filename=ticket_{ticket_id}.png'
+            return response
 
         context = {
             'event': event,
             'setores': setores,
             'cliente': cliente,
+            **get_user_profile(request)
         }
         return render(request, 'reg_eventos/detalhes_evento.html', context)
 
@@ -482,24 +633,65 @@ def buy_ticket(request, event_id):
         messages.error(request, 'Cliente não encontrado. Por favor, cadastre-se novamente.')
         return redirect(reverse('register_client', args=[event_id]))
 
-# Ajuste a view event_details
-def event_details(request, id):
+@role_required('Administrador')
+def list_user(request):
+    context = get_user_profile(request)
+    
+    if not context['is_authenticated']:
+        messages.error(request, 'Você não está logado.')
+        return redirect('login')
+    
+    users = models.Usuario.objects.all()
+    context['usuarios'] = users
+    
+    return render(request, 'list_usuarios/list_usuarios.html', context)
+
+def edit_user(request, id):
+    context = get_user_profile(request)
     try:
-        event = models.Evento.objects.get(id=id)
-        # Combinar data_evento e horario em um datetime com fuso horário
-        if event.horario:
-            combined_datetime = timezone.make_aware(timezone.datetime.combine(event.data_evento.date(), event.horario))
-            event.data_evento = timezone.localtime(combined_datetime)
-        elif isinstance(event.data_evento, timezone.datetime):
-            event.data_evento = timezone.localtime(event.data_evento)
-        else:
-            event.data_evento = timezone.make_aware(timezone.datetime.combine(event.data_evento, timezone.datetime.min.time()))
-        user_profile = get_user_profile(request)
-        context = {
-            'event': event,
-            'user_profile': user_profile
-        }
-        return redirect(reverse('register_client', args=[id]))
-    except models.Evento.DoesNotExist:
-        messages.error(request, 'Evento não encontrado.')
-        return redirect('home')
+        user = models.Usuario.objects.get(id=id)
+    except models.Usuario.DoesNotExist:
+        messages.error(request, 'Usuário não encontrado.')
+        return redirect('list_user')
+    
+    if request.method == 'POST':
+        name_completed = request.POST.get('nome')
+        login_user = request.POST.get('login')
+        email_user = request.POST.get('email')
+        cpf_user = request.POST.get('cpf')
+        profile_user = request.POST.get('perfil')
+        image_user = request.POST.get('imagem')
+        password_user = request.POST.get('password')
+
+        if not name_completed or not login_user or not email_user or not cpf_user or not profile_user or not image_user or not password_user:
+            messages.error(request, 'Todos os campos são obrigatórios!')
+            return redirect(reverse('update_user', args=[id]))
+
+        try:
+            hashed_password = make_password(password_user)
+            profile_id = models.Perfil.objects.get(id=profile_user)
+
+            user.nome = name_completed
+            user.e_mail = email_user
+            user.login = login_user
+            user.senha = hashed_password
+            user.cpf = cpf_user
+            user.imagem = image_user
+            user.id_perfil = profile_id
+
+            user.full_clean()
+            user.save()
+
+            messages.success(request, 'Usuário atualizado com sucesso!')
+            return redirect('list_user')
+
+        except ValueError as ve:
+            messages.error(request, f'Erro ao atualizar usuário: {str(ve)}')
+            return redirect(reverse('update_user', args=[id]))
+        
+    context.update({
+        'user': user,
+        'categorys': models.Perfil.objects.all()
+    })
+    
+    return render(request, 'list_usuarios/edit_user.html', context)

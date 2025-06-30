@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Página Não Encontrada{% endblock %}
+
+{% block content %}
+{% block header %}
+    {% include "partials/header/header_marrom.html" %}
+{% endblock %}
+
+<main class="container text-center py-5">
+    <h1 class="display-4 color_marrom">404 - Página Não Encontrada</h1>
+    <p class="lead color_marrom">Desculpe, a página que você está procurando não existe.</p>
+    <img src="{% static 'icons/error-page.svg' %}" alt="Erro 404" class="img-fluid my-4" style="width: 50px;">
+    <a href="{% url 'home' %}" class="btn bg_verde">Voltar para a Página Inicial</a>
+</main>
+{% endblock %}
+
+{% block footer %}
+    {% include "partials/footer/footer_form.html" %}
+{% endblock %}

@@ -1,0 +1,38 @@
+.container_deteils {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.image_deteils {
+    max-height: 400px;
+    object-fit: cover;
+}
+
+.icons {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0; /* Impede que os ícones sejam redimensionados */
+}
+
+.color_marrom {
+    color: #5C4033;
+}
+
+.d-flex.flex-nowrap {
+    white-space: nowrap; /* Impede que o texto quebre */
+}
+
+.d-flex.align-items-center {
+    gap: 0.5rem; /* Espaçamento entre ícone e texto */
+}
+
+@media (max-width: 768px) {
+    .d-flex.flex-nowrap {
+        flex-wrap: wrap; /* Permite quebra em telas menores */
+        gap: 0.5rem;
+    }
+    .col-sm-12 {
+        margin-bottom: 1.5rem;
+    }
+}

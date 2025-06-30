@@ -40,13 +40,13 @@
 
                 <form action="#" method="post"> {% csrf_token %}
                     <div class="mb-3">
-                        <label for="login" class="color_marrom">Login:</label>
-                        <input type="text" id="login" name="login" class="form-control">
+                        <label for="login" class="color_marrom">CPF ou Email:</label>
+                        <input type="text" id="login" name="login" class="form-control" placeholder="Digite seu CPF ou Email" required>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="color_marrom">Senha:</label>
                         <div class="password_container">
-                            <input type="password" id="password" name="password" class="form-control">
+                            <input type="password" id="password" name="password" class="form-control" placeholder="Digite sua senha" required
                             <button class="btn eye_icon" type="button" id="toggle-pass"><img src="{% static 'icons/eye-slash.svg' %}" alt="icon_eye" class="rounded" id="eye"></button>
                         </div>
                     </div>

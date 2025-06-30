@@ -18,7 +18,23 @@
 
 <div class="container">
     <h1 class="text-center">Cadastro de Setores</h1>
-    <form class="form_container" method="post" id="setor-form"> {% csrf_token %}
+    <form class="form_container" method="post" id="setor-form"> 
+        {% csrf_token %}
+        
+        <!-- Selecionar Evento -->
+        <div class="mb-3">
+            <label for="event_id" class="form-label color_marrom">Selecione um Evento:</label>
+            <select name="event_id" id="event_id" class="form-select" required>
+                <option value="">Escolha um evento</option>
+                {% for evento in eventos %}
+                <option value="{{ evento.id }}" {% if event and event.id == evento.id %}selected{% endif %}>
+                    {{ evento.nome }} - Capacidade: {{ evento.cpt_pessoas }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Adicionar Setores -->
         <div id="setor-fields">
             <div class="setor-row mb-3">
                 <div class="mb-3">
@@ -27,24 +43,36 @@
                 </div>
                 <div class="mb-3">
                     <label for="limit_seats_0" class="form-label color_marrom">Quantidade de cadeiras:</label>
-                    <input type="text" class="form-control" id="limit_seats_0" name="limit_seats[]" placeholder="Quantidade de cadeiras" required>
+                    <input type="number" class="form-control" id="limit_seats_0" name="limit_seats[]" placeholder="Quantidade de cadeiras" required>
                 </div>
             </div>
         </div>
-        <div class="mb-3">
-            <label for="event" class="form-label color_marrom">Evento:</label>
-            <input type="text" class="form-control" id="event" name="event" value="{{ event.nome|default:'' }}" readonly>
-            <input type="hidden" name="event" value="{{ event.id|default:'' }}">
-        </div>
-        <div class="mb-3 text-danger" id="seats_alert" style="display: none;">
-            A soma das cadeiras excede o limite restante do evento.
-        </div>
+
         <div class="text-center">
             <button type="button" class="btn bg_verde color_cinza" id="add-setor">Adicionar Setor</button>
             <button type="submit" class="btn bg_verde color_cinza" id="submit_setor">Cadastrar Setores</button>
         </div>
     </form>
 </div>
+
+<script>
+    document.getElementById('add-setor').addEventListener('click', function() {
+        const container = document.getElementById('setor-fields');
+        const newSetor = document.createElement('div');
+        newSetor.classList.add('setor-row', 'mb-3');
+        newSetor.innerHTML = `
+            <div class="mb-3">
+                <label for="nome_setor" class="form-label color_marrom">Nome do setor:</label>
+                <input type="text" class="form-control" name="nome_setor[]" placeholder="Nome aqui" required>
+            </div>
+            <div class="mb-3">
+                <label for="limit_seats" class="form-label color_marrom">Quantidade de cadeiras:</label>
+                <input type="number" class="form-control" name="limit_seats[]" placeholder="Quantidade de cadeiras" required>
+            </div>
+        `;
+        container.appendChild(newSetor);
+    });
+</script>
 {% endblock %}
 
 {% block footer %}

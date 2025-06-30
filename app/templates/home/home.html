@@ -21,21 +21,21 @@
 </div>
 
 <div class="container margin_card">
-    <h1 class="text-center">Catálogo de Eventos</h1>
+    <h1 class="text-center color_marrom">Catálogo de Eventos</h1>
     <div class="row text-center">
         {% for evento in eventos %}
-        <div class="col-md-6">
+        <div class="col-md-4 mb-4">
             <article class="card">
-                <img src="{{ evento.imagem.url }}" alt="{{ evento.nome }}" class="rounded">
+                <img src="{{ evento.imagem.url }}" alt="{{ evento.nome }}" class="rounded img_tamanho">
                 <div class="letter_card">
-                    <h2 class="text-center">{{ evento.nome }}</h2>
-                    <h4 class="text-center">{{ evento.data_evento|date:"d/m/Y" }}</h4>
+                    <h2 class="text-center color_marrom">{{ evento.nome }}</h2>
+                    <h4 class="text-center color_marrom">{{ evento.data_evento|date:"d/m/Y" }}</h4>
                 </div>
                 <div class="btn_container text-center">
-                    <a href="{% url 'event_details' evento.id %}" class="btn btn-primary btn_card">Saber Mais</a>
+                    <a href="{% url 'event_details' evento.id %}" class="btn bg_verde mb-1 btn_card">Saber Mais</a>
                 </div>
                 <div class="btn_container text-center">
-                    <a href="{% url 'edit_event' evento.id %}" class="btn btn-primary btn_card">Atualizar evento</a>
+                    <a href="{% url 'edit_event' evento.id %}" class="btn bg_verde mb-3 btn_card">Atualizar evento</a>
                 </div>
             </article>
         </div>

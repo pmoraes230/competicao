@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cad Usuário{% endblock %}
+
+{% block content %}
+{% block header %}
+    {% include 'partials/header/header_marrom.html' %}
+{% endblock %}
+
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }} text-center"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<div class="container">
+    <h1 class="text-center">Cadastro de Usuário</h1>
+    <!-- Formulário ou conteúdo de cadastro aqui -->
+    <form class="form_container" method="post"> {% csrf_token %}
+        <div class="mb-3">
+            <label for="nome" class="form-label color_marrom">Nome Completo:</label>
+            <input type="text" class="form-control" id="nome" name="nome" value="{{ user.nome|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="login" class="form-label color_marrom">Login:</label>
+            <input type="text" class="form-control" id="login" name="login" value="{{ user.login|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label color_marrom">Email:</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ user.e_mail}}">
+        </div>
+        <div class="mb-3">
+            <label for="cpf" class="form-label color_marrom">CPF:</label>
+            <input type="text" class="form-control" id="cpf" name="cpf" value="{{ user.cpf|default_if_none:'' }}">
+            <p class="subtitle color_branco" id="alert_cpf" style="display: none;"></p>
+        </div>
+        <div class="mb-3">
+            <label for="perfil" class="form-label color_marrom">Perfil:</label>
+            <select name="perfil" id="perfil" class="color_marrom tamanho_seletor">
+                <option value="select" class="color_marrom" disabled selected>Escolha um perfil</option>
+                {% for category in categorys %}
+                    {% if category.id == user.id_perfil.id %}
+                        <option value="{{ category.id }}" class="color_marrom" selected>{{ category.nome }}</option>
+                    {% else %}
+                        <option value="{{ category.id }}" class="color_marrom">{{ category.nome }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="imagem" class="form-label color_marrom">Imagem:</label>
+            <input type="file" class="form-control" id="imagem" name="imagem">
+        </div>
+        <div class="mb-3">
+            <label for="password" class="color_marrom">Senha:</label>
+            <div class="password_container">
+                <input type="password" id="password" name="password" class="form-control">
+                <button class="btn eye_icon" type="button" id="toggle-pass"><img src="{% static 'icons/eye-slash.svg' %}" alt="icon_eye" class="rounded" id="eye"></button>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="password_confirm" class="color_marrom">Confirme sua senha:</label>
+            <div class="password_container">
+                <input type="password" id="password_confirm" name="password_confirm" class="form-control">
+                <button class="btn eye_icon" type="button" id="toggle_pass_confirm"><img src="{% static 'icons/eye-slash.svg' %}" alt="icon_eye" class="rounded" id="eye_confirm"></button>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn bg_verde color_cinza" id="btn_post" disabled>Cadastrar</button>
+            <a class="btn color_marrom danger" href="{% url "delete_user" user.id %}">Apagar Funcionario</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block footer %}
+{% include 'partials/footer/footer.html' %}
+{% endblock %}

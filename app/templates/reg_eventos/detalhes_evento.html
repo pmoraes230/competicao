@@ -9,9 +9,9 @@
 {% endblock %}
 
 {% if messages %}
-<ul class="messages list-unstyled text-center my-3">
+<ul class="messages">
     {% for message in messages %}
-    <li class="{% if message.tags %} color_marrom {{ message.tags }}{% endif %}">{{ message }}</li>
+    <li{% if message.tags %} class="{{ message.tags }} text-center color_marrom"{% endif %}>{{ message }}</li>
     {% endfor %}
 </ul>
 {% endif %}
@@ -26,6 +26,7 @@
                 <img src="{% static 'images/default_event.jpg' %}" alt="Imagem padrão do evento" class="image_deteils img-fluid rounded shadow">
             {% endif %}
         </div>
+                
         
         <!-- Detalhes do Evento -->
         <div class="col-md-6 col-sm-12 content_deteils">
@@ -63,37 +64,33 @@
                     </div>
                 </div>
 
-                <!-- Formulário de Compra -->
-                {% if cliente %}
-                    <form method="post" action="{% url 'buy_ticket' event.id %}" class="mt-4">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="setor" class="form-label color_marrom">Selecione um Setor:</label>
-                            <select name="setor" id="setor" class="form-select" required>
-                                <option value="">Escolha um setor</option>
-                                {% for setor in setores %}
-                                    {% if setor.qtd_cadeira > 0 %}
-                                        <option value="{{ setor.id }}">{{ setor.nome }} ({{ setor.qtd_cadeira }} cadeiras disponíveis)</option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="quantidade" class="form-label color_marrom">Quantidade de Ingressos:</label>
-                            <input type="number" name="quantidade" id="quantidade" class="form-control" min="1" value="1" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Comprar Ingressos</button>
-                    </form>
+                <!-- Botão para cadastrar cliente -->
+                {% if not cliente %}
+                <p class="mt-4 color_marrom">Por favor, cadastre um cliente antes de comprar ingressos.</p>
+                <a href="{% url 'register_client' event.id %}" class="btn btn-primary mt-2">Cadastrar Cliente</a>
                 {% else %}
-                    <p class="mt-4 color_marrom">Por favor, cadastre-se antes de comprar ingressos.</p>
-                    <a href="{% url 'register_client' event.id %}" class="btn btn-primary mt-2">Cadastrar Cliente</a>
-                {% endif %}
-
-                {% if messages and 'Compra realizada com sucesso!' in messages.get_messages %}
-                    <div class="mt-4">
-                        <p class="color_marrom">Baixe seu ticket:</p>
-                        <a href="{% url 'download_ticket' venda.id %}" class="btn btn-success">Download Ticket</a>
+                <!-- Formulário de Compra -->
+                <form method="post" action="{% url 'buy_ticket' event.id %}" class="mt-4">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="setor" class="form-label color_marrom">Selecione um Setor:</label>
+                        <select name="setor" id="setor" class="form-select" required>
+                            <option value="">Escolha um setor</option>
+                            {% for setor in setores %}
+                                {% if setor.qtd_cadeira > 0 %}
+                                    <option value="{{ setor.id }}">{{ setor.nome }} ({{ setor.qtd_cadeira }} cadeiras disponíveis)</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
                     </div>
+                    <div class="mb-3">
+                        <label for="quantidade" class="form-label color_marrom">Quantidade de Ingressos:</label>
+                        <input type="number" name="quantidade" id="quantidade" class="form-control" min="1" value="1" required onchange="updateTotalPrice()">
+                    </div>
+                    <p>Preço unitário: R$ {{ event.preco_evento|floatformat:2 }}</p>
+                    <p id="total-price">Preço total: R$ {{ event.preco_evento|floatformat:2 }}</p>
+                    <button type="submit" class="btn btn-primary">Comprar Ingressos</button>
+                </form>
                 {% endif %}
             </div>
         </div>
@@ -103,4 +100,13 @@
 {% block footer %}
     {% include 'partials/footer/footer_form.html' %}
 {% endblock %}
+
+<script>
+    function updateTotalPrice() {
+        const unitPrice = {{ event.preco_evento|floatformat:2 }};
+        const quantity = document.getElementById('quantidade').value;
+        const totalPrice = unitPrice * quantity;
+        document.getElementById('total-price').innerText = `Preço total: R$ ${totalPrice.toFixed(2)}`;
+    }
+</script>
 {% endblock %}

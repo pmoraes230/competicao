@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Lista Usuários{% endblock %}
+{% block content %}
+{% block header %}
+    {% include "partials/header/header_marrom.html" %}
+{% endblock %}
+
+{% if messages %}
+<ul class="messages list-unstyled text-center my-3">
+    {% for message in messages %}
+    <li class="{% if message.tags %} color_marrom {{ message.tags }}{% endif %}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<main class="container py-5">
+    <h1 class="text-center mb-4 color_marrom">Lista de Usuários</h1>
+    <div class="row">
+        {% for usuario in usuarios %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title color_marrom">{{ usuario.nome }}</h5>
+                    <p class="card-text color_marrom">Email: {{ usuario.e_mail }}</p>
+                    <p class="card-text color_marrom">Tipo: {{ usuario.id_perfil.nome }}</p>
+                    <p class="card-text color_marrom">CPF: {{ usuario.cpf }}</p>
+                    <p class="card-text color_marrom">Login: {{ usuario.login }}</p>
+                    <a class="btn bg_verde mt-2 color_marrom" href="{% url 'edit_user' usuario.id %}">Editar Usuário</a>
+                </div> 
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-center">Nenhum usuário encontrado.</p>
+        </div>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}
+
+{% block footer %}
+    {% include "partials/footer/footer.html" %}
+{% endblock footer %}

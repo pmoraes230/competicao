@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Jockey+One&display=swap');
+
+:root {
+    --verde: #6FD904;
+    --verde_medio: #62BF04;
+    --marrom: #402F25;
+    --marrom_claro: #8C796D;
+    --cinza: #F2F2F2;
+}
+
+body {
+    background-color: var(--cinza);
+    font-family: "Jockey One", sans-serif;
+}
+
+.bg_verde {
+    background-color: var(--verde);
+}
+
+.color_marrom {
+    color: var(--marrom);
+}
+
+.color_verde {
+    color: var(--verde);
+}
+
+.color_cinza {
+    color: var(--cinza);
+}
+
+.form_container {
+    max-width: 580px;
+    margin: auto;
+}
+
+.tamanho_seletor {
+    max-width: 580px;
+    width: 100%;
+    padding: 2px 0;
+    border: 1px solid #dfdede;
+    border-radius: 5px;
+}
+
+.footer_home {
+    margin-top: 3rem;
+    background-color: var(--marrom);
+    height: 4rem;
+}
+
+.footer_form {
+    margin-top: 3rem;
+    background-color: var(--marrom);
+    height: 4rem;
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+}
+
+.link_style {
+    text-decoration: none;
+}
