@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+{% block header %}
+    {% include "partials/header/header_marrom.html" %}
+{% endblock %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mt-4 text-center color_marrom">Dashboard de Usuários</h1>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Login</th>
+                        <th>CPF</th>
+                        <th>Perfil</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.nome }}</td>
+                        <td>{{ usuario.e_mail }}</td>
+                        <td>{{ usuario.login }}</td>
+                        <td>{{ usuario.cpf }}</td>
+                        <td>{{ usuario.id_perfil.nome }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+    {% include 'partials/footer/footer_form.html' %}
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+{% block header %}
+    {% include "partials/header/header_marrom.html" %}
+{% endblock %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mt-4 text-center color_marrom">Dashboard Administrativo</h1>
+            <p class="text-center color_marrom">Bem-vindo ao painel de controle! Aqui você pode gerenciar o sistema e visualizar estatísticas.</p>
+        </div>
+    </div>
+
+    <!-- Seção de Estatísticas -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Eventos</h5>
+                    <a href="{% url "dash_eventos" %}" class="btn card-text display-4">{{ total_eventos }}</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Usuários</h5>
+                    <a href="{% url "dash_usuarios" %}" class="btn card-text display-4">{{ total_usuarios }}</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Vendas</h5>
+                    <a href="{% url "dash_vendas" %}" class="btn card-text display-4">{{ total_vendas }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção de Atividades Recentes -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h2>Atividades Recentes</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Clientes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for atividade in atividades_recentes %}
+                    <tr>
+                        <td>{{ atividade.data|date:"d/m/Y H:i" }}</td>
+                        <td>{{ atividade.descricao }}</td>
+                        <td>{{ atividade.usuario.nome }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">Nenhuma atividade recente.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Seção de Notificações -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h2 class="color_marrom">Notificações</h2>
+            {% if notificacoes %}
+                {% for notificacao in notificacoes %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        {{ notificacao.mensagem }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>Nenhuma notificação pendente.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block footer %}
+    {% include 'partials/footer/footer.html' %}
+{% endblock %}

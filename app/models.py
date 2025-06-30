@@ -35,6 +35,7 @@ class Evento(models.Model):
     imagem = models.ImageField(upload_to='eventos/', null=True, blank=True)
     local_evento = models.CharField(max_length=20)
     preco_evento = models.DecimalField(max_digits=10, decimal_places=2)
+    descricao = models.CharField(max_length=250, blank=True, null=True)
     id_usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE, db_column='id_usuario')
 
     class Meta:

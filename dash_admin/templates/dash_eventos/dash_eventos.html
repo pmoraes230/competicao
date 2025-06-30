@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+{% block header %}
+    {% include "partials/header/header_marrom.html" %}
+{% endblock %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mt-4 text-center color_marrom">Dashboard de Usuários</h1>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th class="color_marrom">Nome</th>
+                        <th class="color_marrom">Data do Evento</th>
+                        <th class="color_marrom">Horario</th>
+                        <th class="color_marrom">Capacidade de pessoas</th>
+                        <th class="color_marrom">Local</th>
+                        <th class="color_marrom">Preço do evento</th>
+                        <th class="color_marrom">Cadastrado por</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in eventos %}
+                    <tr>
+                        <td class="color_marrom">{{ evento.nome }}</td>
+                        <td class="color_marrom">{{ evento.data_evento }}</td>
+                        <td class="color_marrom">{{ evento.horario }}</td>
+                        <td class="color_marrom">{{ evento.cpt_pessoas }}</td>
+                        <td class="color_marrom">{{ evento.local_evento }}</td>
+                        <td class="color_marrom">{{ evento.preco_evento }}</td>
+                        <td class="color_marrom">{{ evento.id_usuario.nome }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+    {% include 'partials/footer/footer_form.html' %}
+{% endblock %}

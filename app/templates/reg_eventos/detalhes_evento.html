@@ -62,6 +62,13 @@
                             <p class="color_marrom mb-0">Capacidade: {{ event.cpt_pessoas|floatformat:0 }} pessoas</p>
                         </div>
                     </div>
+
+                    <div class="col-12">
+                        <div class="description_event">
+                            <h5 class="color_marrom">Descrição:</h5>
+                            <p class="color_marrom">{{ event.descricao|default:"Nenhuma descrição disponível." }}</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Botão para cadastrar cliente -->

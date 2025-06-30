@@ -411,6 +411,7 @@ def edit_event(request, id):
         image_event = request.FILES.get('imagem')
         price_event = request.POST.get('price')
         limit_peaple = request.POST.get('peaple_limit')
+        description = request.POST.get('descricao')
         adress = request.POST.get('adress')
         
         # Converte vírgulas para pontos nos campos numéricos
@@ -437,6 +438,7 @@ def edit_event(request, id):
                 update_event.imagem = image_event
             update_event.local_evento = adress
             update_event.preco_evento = price_event
+            update_event.descricao = description
             update_event.id_usuario_id = user_id  # Ajuste para id_usuario_id
 
             update_event.full_clean()
